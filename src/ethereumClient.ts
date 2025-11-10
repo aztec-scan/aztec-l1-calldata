@@ -1,10 +1,11 @@
 import type { NodeInfo } from "@aztec/aztec.js";
-import { GSEContract, type ViemPublicClient } from "@aztec/ethereum";
+import { getAddressFromPrivateKey, GSEContract, type ViemPublicClient } from "@aztec/ethereum";
 import { RollupAbi } from "@aztec/l1-artifacts";
 import assert from "assert";
 import "dotenv/config";
 import { createPublicClient, encodeFunctionData, erc20Abi, getAddress, getContract, http, type Address, type GetContractReturnType, type PublicClient } from "viem";
 import { mainnet, sepolia } from "viem/chains";
+import type { CuratedKeystoreData } from "./fileUtils.ts";
 
 const ETHEREUM_NODE_URL = process.env.ETHEREUM_NODE_URL;
 
@@ -109,21 +110,19 @@ type CalldataExport = {
 }
 
 export const getApproveStakeSpendCalldata = async (
-  currentTokenHolderAddress: string,
+  //currentTokenHolderAddress: string,
+  nbrOfAttesters: number = 1,
 ): Promise<CalldataExport> => {
   const rollupContract = getRollupContract();
   const activationThreshold = await rollupContract.read.getActivationThreshold();
   console.log(`Activation threshold: ${activationThreshold}`);
   const stakingAssetAddress = await rollupContract.read.getStakingAsset();
-  const alreadyApproved = await getContract({
-    address: stakingAssetAddress,
-    abi: erc20Abi,
-    client: getEthereumClient(),
-  }).read.allowance([getAddress(currentTokenHolderAddress), rollupContract.address]);
-  if (alreadyApproved > 0) {
-    const percentageOfActivation = (Number(alreadyApproved) / Number(activationThreshold)) * 100;
-    console.log(`Warning: There is already an approved amount of ${alreadyApproved} which is ${percentageOfActivation.toFixed(2)}% of the activation threshold.`);
-  }
+  // const alreadyApproved = await getContract({
+  //   address: stakingAssetAddress,
+  //   abi: erc20Abi,
+  //   client: getEthereumClient(),
+  // }).read.allowance([getAddress(currentTokenHolderAddress), rollupContract.address]);
+  const requiredAllowance = activationThreshold * BigInt(nbrOfAttesters);
 
   return {
     address: stakingAssetAddress,
@@ -132,7 +131,7 @@ export const getApproveStakeSpendCalldata = async (
       functionName: 'approve',
       args: [
         getRollupContract().address,
-        activationThreshold,
+        requiredAllowance
       ]
     })
   };
@@ -147,6 +146,18 @@ export const getDepositCalldata = async (
 ): Promise<CalldataExport> => {
   const client = getEthereumClient(nodeInfo.l1ChainId);
   const rollupContract = getRollupContract();
+  // const attesterView = await rollupContract.read.getAttesterView([getAddress(attesterAddress)]);
+  // const attesterConfig = await rollupContract.read.getConfig([getAddress(attesterAddress)]);
+  // const attesterExit = await rollupContract.read.getExit([getAddress(attesterAddress)]);
+  // const attesterStatus = await rollupContract.read.getStatus([getAddress(attesterAddress)]);
+  //
+  // console.log(`Attester view for ${attesterAddress}:`, {
+  //   attesterView,
+  //   attesterConfig,
+  //   attesterExit,
+  //   attesterStatus,
+  // });
+
   const gse = new GSEContract(client as ViemPublicClient, await rollupContract.read.getGSE());
   const registrationTuple = await gse.makeRegistrationTuple(BigInt(blsSecretKey));
 
@@ -165,4 +176,21 @@ export const getDepositCalldata = async (
       ],
     })
   };
+}
+export const logAttestersCalldata = async (
+  keystoreData: CuratedKeystoreData[],
+  withdrawerAddress: string,
+  nodeInfo: NodeInfo
+): Promise<void> => {
+  for (const d of keystoreData) {
+    const attesterAddress = getAddressFromPrivateKey(d.ethPrivateKey as `0x${string}`);
+    const calldatata = await getDepositCalldata(
+      attesterAddress,
+      withdrawerAddress,
+      d.blsSecretKey,
+      true,
+      nodeInfo
+    );
+    console.log(`✅ Deposit calldata for attester ${attesterAddress}:`, calldatata);
+  }
 }

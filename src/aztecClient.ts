@@ -5,34 +5,7 @@ import {
 } from "@aztec/aztec.js";
 import assert from "assert";
 import "dotenv/config";
-import fs from "fs";
-import { createRequire } from "module";
-import path from "path";
-const require = createRequire(import.meta.url);
-
-// --- Helper to get package version safely ---
-function getPackageVersion(pkgName: string): string {
-  try {
-    // 1️⃣ Find the main entry of the package
-    const entryPath = require.resolve(pkgName);
-
-    // 2️⃣ Walk up to find its nearest package.json
-    let dir = path.dirname(entryPath);
-    while (dir !== path.parse(dir).root) {
-      const candidate = path.join(dir, "package.json");
-      if (fs.existsSync(candidate)) {
-        const pkg = JSON.parse(fs.readFileSync(candidate, "utf8"));
-        return pkg.version;
-      }
-      dir = path.dirname(dir);
-    }
-
-    throw new Error(`No package.json found for ${pkgName}`);
-  } catch (err) {
-    console.warn(`⚠️ Could not resolve version for package "${pkgName}":`, err);
-    return "unknown";
-  }
-}
+import { getPackageVersion } from "./fileUtils.ts";
 
 // --- Retrieve versions dynamically ---
 const aztecjsVersion = getPackageVersion("@aztec/aztec.js");
