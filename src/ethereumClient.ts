@@ -1,6 +1,6 @@
 import type { NodeInfo } from "@aztec/aztec.js";
 import { getAddressFromPrivateKey, GSEContract, type ViemPublicClient } from "@aztec/ethereum";
-import { RollupAbi } from "@aztec/l1-artifacts";
+import { GovernanceAbi, GSEAbi, RollupAbi } from "@aztec/l1-artifacts";
 import assert from "assert";
 import "dotenv/config";
 import { createPublicClient, encodeFunctionData, erc20Abi, getAddress, getContract, http, type Address, type GetContractReturnType, type PublicClient } from "viem";
@@ -76,9 +76,31 @@ const getEtherscanAddressUrl = (client: PublicClient, address: Address) => {
 export const printLinks = async (nodeInfo: NodeInfo): Promise<void> => {
   const client = getEthereumClient(nodeInfo.l1ChainId);
   rollupContract = getRollupContract();
+  const gse = await rollupContract.read.getGSE();
+  const governance = await getContract({
+    address: gse,
+    abi: GSEAbi,
+    client,
+  }).read.getGovernance();
+  const governanceConfig = await getContract({
+    address: governance,
+    abi: GovernanceAbi,
+    client,
+  }).read.getConfiguration();
+  // NOTE: withdrawal delay copied from https://github.com/AztecProtocol/l1-contracts/blob/f0b17231361e40b6802e927fda98b8d5f84c1c24/src/governance/libraries/ConfigurationLib.sol#L36
+  const {
+    votingDelay,
+    votingDuration,
+    executionDelay,
+  } = governanceConfig;
+  const withdrawalDelayTimeStamp = votingDelay / 5n + votingDuration + executionDelay;
+  const withdrawalDelayInHrs = Number(withdrawalDelayTimeStamp) / 60 / 60;
   console.log(`rollup contract (${getEtherscanAddressUrl(client, rollupContract.address)}):
   rewarddistributor: ${getEtherscanAddressUrl(client, await rollupContract.read.getRewardDistributor())}
-  gse: ${getEtherscanAddressUrl(client, await rollupContract.read.getGSE())}
+  gse: ${getEtherscanAddressUrl(client, gse)}
+  governance: ${getEtherscanAddressUrl(client, governance)}
+  governance config: ${JSON.stringify(governanceConfig, (key, value) => typeof value === 'bigint' ? value.toString() : value, 2)}
+  withdrawal delay (in hrs): ${withdrawalDelayInHrs}
   isrewardsclaimable: ${await rollupContract.read.isRewardsClaimable()}
 `);
 
