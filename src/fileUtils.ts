@@ -40,7 +40,7 @@ export type CuratedKeystoreData = {
 }
 
 export function getRelevantKeystoreData(keystorePath?: string): CuratedKeystoreData[] {
-  const p = keystorePath || path.join(process.cwd(), "..", "keystore.json");
+  const p = keystorePath || path.join(process.cwd(), "..", "keys", "keystore.json");
   console.log(`Using keystore path: ${p}`);
   const keystoreJson = fs.readFileSync(p, "utf8");
   const keystore: KeystoreData = JSON.parse(keystoreJson);
