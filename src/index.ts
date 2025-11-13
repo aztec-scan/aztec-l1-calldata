@@ -17,7 +17,10 @@ const main = async () => {
   await init(nodeInfo, l1RpcUrl);
   await printImportantInfo(nodeInfo);
   await command.getPublisherEth(nodeInfo, data);
-  await command.writeAttesterAttesterRegistrationData(nodeInfo, data, `${AZTEC_DOCKER_DIR}/${ATTESTER_REGISTRATIONS_DIR_NAME}`);
+  data.attesterRegistrations = await command.writeAttesterAttesterRegistrationData(nodeInfo, data, `${AZTEC_DOCKER_DIR}/${ATTESTER_REGISTRATIONS_DIR_NAME}`);
+  for (const attesterReg of data.attesterRegistrations) {
+    console.log(`✅ Attester registration data: ${attesterReg.path}`);
+  }
 };
 
 // Export main function for potential reuse

@@ -10,7 +10,7 @@ const get0xString = (bn: bigint): HexString => {
 
 const ATTESTER_REGISTRATION_FILE_PREFIX = "regs";
 
-const command = async (nodeInfo: NodeInfo, dirData: DirData, attesterDirPath: string) => {
+const command = async (nodeInfo: NodeInfo, dirData: DirData, attesterDirPath: string): Promise<DirData["attesterRegistrations"]> => {
   const client = getEthereumClient(nodeInfo.l1ChainId);
   const rollupContract = getRollupContract();
   const keystoresMissingRegistrationFiles: DirData["keystores"] = dirData.keystores.filter(ks => {
@@ -20,6 +20,7 @@ const command = async (nodeInfo: NodeInfo, dirData: DirData, attesterDirPath: st
     return true;
   });
   const gse = new GSEContract(client as ViemPublicClient, await rollupContract.read.getGSE());
+  const newAttesterRegistrations: DirData["attesterRegistrations"] = [];
   for (const keystore of keystoresMissingRegistrationFiles) {
     const attesterRegistrations: AttesterRegistration[] = [];
     for (const validator of keystore.data.validators) {
@@ -42,8 +43,18 @@ const command = async (nodeInfo: NodeInfo, dirData: DirData, attesterDirPath: st
         }
       });
     }
-    await writeFile(`${attesterDirPath}/${ATTESTER_REGISTRATION_FILE_PREFIX}${keystore.id}.json`, JSON.stringify(attesterRegistrations, null, 2));
+    const path = `${attesterDirPath}/${ATTESTER_REGISTRATION_FILE_PREFIX}${keystore.id}.json`;
+    await writeFile(path, JSON.stringify(attesterRegistrations, null, 2));
+    newAttesterRegistrations.push({
+      id: keystore.id,
+      path,
+      data: attesterRegistrations
+    });
   }
+  return [
+    ...dirData.attesterRegistrations,
+    ...newAttesterRegistrations
+  ]
 }
 // TODO: add another command-file where you go through ALL attester-files and checks on chain status and print calldata if not already registered on staking registry
 
