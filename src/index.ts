@@ -12,8 +12,8 @@ const PROVIDER_ADMIN_ADDRESS = "0x90e7b822a5Ac10edC381aBc03d94b866e4B985A1"
 const main = async () => {
   const data = await getDockerDirData(AZTEC_DOCKER_DIR);
   const l2RpcUrl = AZTEC_NODE_URL || data.l2RpcUrl || "http://localhost:8080";
-  // const nodeInfo = await getNodeInfo(l2RpcUrl);
-  //console.log("✅ Retrieved Aztec node info:", JSON.stringify(nodeInfo, null, 2));
+  const nodeInfo = await getNodeInfo(l2RpcUrl);
+  console.log("✅ Retrieved Aztec node info:", JSON.stringify(nodeInfo, null, 2));
   const l1RpcUrl = ETHEREUM_NODE_URL || data.l1RpcUrl || "http://localhost:8545";
   const l1ChainId = 1;
   const rollupAddress = "0x603bb2c05D474794ea97805e8De69bCcFb3bCA12";
