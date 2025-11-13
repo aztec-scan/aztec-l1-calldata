@@ -1,7 +1,8 @@
-import { getNodeInfo } from "./components/aztecClient.js";
-import { init, printImportantInfo, printPublisherETH } from "./components/ethereumClient.js";
-import { getDockerDirData } from "./utils/fileOperations.js";
 import "dotenv/config";
+import * as command from "./commands/index.js";
+import { getNodeInfo } from "./components/aztecClient.js";
+import { init, printImportantInfo } from "./components/ethereumClient.js";
+import { ATTESTER_REGISTRATIONS_DIR_NAME, getDockerDirData } from "./utils/fileOperations.js";
 
 const AZTEC_DOCKER_DIR = process.env.AZTEC_DOCKER_DIR || process.cwd();
 const ETHEREUM_NODE_URL = process.env.ETHEREUM_NODE_URL;
@@ -15,8 +16,8 @@ const main = async () => {
   const l1RpcUrl = ETHEREUM_NODE_URL || data.l1RpcUrl || "http://localhost:8545";
   await init(nodeInfo, l1RpcUrl);
   await printImportantInfo(nodeInfo);
-  await printPublisherETH(nodeInfo, data);
-  // run command(s)
+  await command.getPublisherEth(nodeInfo, data);
+  await command.writeAttesterAttesterRegistrationData(nodeInfo, data, `${AZTEC_DOCKER_DIR}/${ATTESTER_REGISTRATIONS_DIR_NAME}`);
 };
 
 // Export main function for potential reuse

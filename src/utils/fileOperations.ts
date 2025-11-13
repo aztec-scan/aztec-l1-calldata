@@ -3,6 +3,7 @@ import { createRequire } from "module";
 import path, { join } from "path";
 import { AttesterRegistration, CuratedKeystoreData, DirData, KeystoreData } from "../types.js";
 const require = createRequire(import.meta.url);
+export const ATTESTER_REGISTRATIONS_DIR_NAME = "attester-registrations";
 
 export const getPackageVersion = async (pkgName: string): Promise<string> => {
   try {
@@ -40,12 +41,14 @@ const parseEnvFile = (content: string): Partial<DirData> => {
   }, {} as Partial<DirData>);
 }
 
+const notNumbers = /[^0-9]/g;
 const getJsonFileData = async (fullPath: string): Promise<DirData["keystores"] | DirData["attesterRegistrations"]> => {
   const files = await fs.readdir(fullPath);
   return await Promise.all(files.map(async (jsonFile) => {
     const fullFullPath = join(fullPath, jsonFile);
     return {
-      name: fullFullPath,
+      path: fullFullPath,
+      id: jsonFile.replace(notNumbers, ""),
       data: JSON.parse(await fs.readFile(fullFullPath, "utf8"))
     };
   }));
@@ -54,6 +57,15 @@ const getJsonFileData = async (fullPath: string): Promise<DirData["keystores"] |
 export const getDockerDirData = async (dockerDirPath: string) => {
   const files = await fs.readdir(dockerDirPath);
   let dirData: Partial<DirData> = {};
+  if (!files.includes(ATTESTER_REGISTRATIONS_DIR_NAME) && files.includes("keys")) {
+    console.log("Creating attester-registrations directory...");
+    await fs.mkdir(join(dockerDirPath, ATTESTER_REGISTRATIONS_DIR_NAME));
+  }
+  for (const reqFile of [".env", "keys", ATTESTER_REGISTRATIONS_DIR_NAME]) {
+    if (!files.includes(reqFile)) {
+      throw new Error(`Missing required file or directory: ${reqFile}`);
+    }
+  }
   for (const file of files) {
     const fullPath = join(dockerDirPath, file);
     const stats = await fs.stat(fullPath);
@@ -64,7 +76,7 @@ export const getDockerDirData = async (dockerDirPath: string) => {
       };
     } else if (stats.isDirectory() && file === "keys") {
       dirData.keystores = await getJsonFileData(fullPath) as DirData["keystores"];
-    } else if (stats.isDirectory() && file === "attester-registrations") {
+    } else if (stats.isDirectory() && file === ATTESTER_REGISTRATIONS_DIR_NAME) {
       dirData.attesterRegistrations = await getJsonFileData(fullPath) as DirData["attesterRegistrations"];
     } else {
       console.log(`SKIPPING ${file} - ${stats.isDirectory() ? "Directory" : "File"}`);
@@ -72,3 +84,8 @@ export const getDockerDirData = async (dockerDirPath: string) => {
   }
   return dirData as DirData;
 }
+
+export const writeFile = async (fullPath: string, stringData: string) => {
+  await fs.writeFile(fullPath, stringData, "utf8");
+}
+

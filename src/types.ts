@@ -39,11 +39,13 @@ export type DirData = {
   l1RpcUrl: string | undefined,
   l2RpcUrl: string | undefined,
   keystores: {
-    name: string,
+    path: string,
+    id: string,
     data: KeystoreData,
   }[],
   attesterRegistrations: {
-    name: string,
+    path: string,
+    id: string,
     data: AttesterRegistration[]
-  }
+  }[]
 }
