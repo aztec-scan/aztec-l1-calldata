@@ -23,6 +23,7 @@ const main = async () => {
     console.log(`✅ Attester registration data: ${attesterReg.path}`);
   }
   await command.getCreateProviderCallData(nodeInfo, data, PROVIDER_ADMIN_ADDRESS);
+  await command.getAddKeysToProviderCalldata(nodeInfo, data, PROVIDER_ADMIN_ADDRESS);
 };
 
 // Export main function for potential reuse
