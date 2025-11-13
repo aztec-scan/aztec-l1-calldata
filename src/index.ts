@@ -10,7 +10,7 @@ const AZTEC_NODE_URL = process.env.AZTEC_NODE_URL;
 
 const main = async () => {
   const data = await getDockerDirData(AZTEC_DOCKER_DIR);
-  const l2RpcUrl = AZTEC_NODE_URL || data.l2RpcUrl || "localhost:8080";
+  const l2RpcUrl = AZTEC_NODE_URL || data.l2RpcUrl || "http://localhost:8080";
   const nodeInfo = await getNodeInfo(l2RpcUrl);
   console.log("✅ Retrieved Aztec node info:", JSON.stringify(nodeInfo, null, 2));
   const l1RpcUrl = ETHEREUM_NODE_URL || data.l1RpcUrl || "http://localhost:8545";

@@ -35,7 +35,7 @@ const parseEnvFile = (content: string): Partial<DirData> => {
       // NOTE: assuming docker-urls and using default instead
     }
     if (line.trim() && line.startsWith("AZTEC_PORT")) {
-      acc.l2RpcUrl = "localhost:" + line.split("=")[1]?.replaceAll('"', "");
+      acc.l2RpcUrl = "http://localhost:" + line.split("=")[1]?.replaceAll('"', "");
     }
     return acc;
   }, {} as Partial<DirData>);
